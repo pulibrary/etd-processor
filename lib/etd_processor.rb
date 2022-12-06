@@ -11,18 +11,20 @@ class EtdProcessor < Thor
   DEFAULT_DSPACE_URI = 'https://dataspace.princeton.edu'
   HTML_TABLE_CSS_SELECTOR = '#content > div:nth-child(2) > div > div.col-md-9 > div.discovery-result-results > div > table'
 
-  attr_reader :file_path, :output_file_path, :dspace_uri
+  attr_reader :file_path, :output_file_path, :dspace_uri, :original_marc_file_path
 
   desc 'insert_arks', 'insert ARKs into a MARC file'
   option :file_path, aliases: '-f', required: true
   option :output_file_path, aliases: '-o', required: true
   option :dspace_uri, default: DEFAULT_DSPACE_URI
+  option :original_marc_file_path, aliases: '-m'
   # rubocop:disable Metrics/AbcSize
   # rubocop:disable Metrics/MethodLength
-  def insert_arks(file_path, output_file_path, dspace_url)
+  def insert_arks(file_path, output_file_path, dspace_url, original_marc_file_path = nil)
     @file_path = file_path
     @output_file_path = output_file_path
     @dspace_uri = URI.parse(dspace_url)
+    @original_marc_file_path = original_marc_file_path
 
     marc_reader.each_with_index do |record, _index|
       current245 = record['245']
@@ -32,29 +34,40 @@ class EtdProcessor < Thor
       raise(ArgumentError, 'Failed to find the title subfield 245$a for record {index}') unless title
 
       arks = query_for_dspace_item(title:)
-      next if arks.empty?
-
-      ark = arks.first
 
       record_hash = record.to_hash
 
-      new_field = {
-        '856' => {
-          'ind1' => ' ',
-          'ind2' => ' ',
-          'subfields' => [
-            {
-              'u' => ark
-            }
-          ]
+      if arks.empty?
+        say("No ARKs found for record \"#{title}\"", :yellow)
+        if original_marc_writer
+          new_record = MARC::Record.new_from_hash(record_hash)
+          original_marc_writer.write(new_record)
+        end
+      else
+        ark = arks.first
+        say("Resolved ARK #{ark} for record \"#{title}\"", :green)
+
+        new_field = {
+          '856' => {
+            'ind1' => ' ',
+            'ind2' => ' ',
+            'subfields' => [
+              {
+                'u' => ark
+              }
+            ]
+          }
         }
-      }
 
-      record_hash['fields'] << new_field
+        record_hash['fields'] << new_field
 
-      new_record = MARC::Record.new_from_hash(record_hash)
-      marc_writer.write(new_record)
+        new_record = MARC::Record.new_from_hash(record_hash)
+        marc_writer.write(new_record)
+      end
     end
+
+    original_marc_writer.close unless original_marc_writer.nil?
+    marc_writer.close
   end
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
@@ -66,7 +79,13 @@ class EtdProcessor < Thor
     end
 
     def marc_writer
-      @marc_writer = MARC::Writer.new(output_file_path)
+      @marc_writer ||= MARC::Writer.new(output_file_path)
+    end
+
+    def original_marc_writer
+      return unless original_marc_file_path
+
+      @original_marc_writer ||= MARC::Writer.new(original_marc_file_path)
     end
 
     def dspace_search_uri
@@ -94,10 +113,13 @@ class EtdProcessor < Thor
       response_document = Nokogiri::HTML.parse(response.body)
       # #content > div:nth-child(2) > div > div.col-md-9 > div.discovery-result-results > div > table > tbody
       search_table = response_document.at_css(HTML_TABLE_CSS_SELECTOR)
+      matches = []
+
+      return matches if search_table.nil?
+
       search_table_rows = search_table.css('tr')
       search_result_rows = search_table_rows[1..]
 
-      matches = []
       search_result_rows.each do |tr|
         td_element = tr.at_css("td[headers='t2']")
 

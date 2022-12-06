@@ -17,6 +17,11 @@
 # See https://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 
 require 'pry-byebug'
+require 'simplecov'
+SimpleCov.start do
+  add_filter "/spec/"
+end
+
 require_relative '../lib/etd_processor'
 
 RSpec.configure do |config|

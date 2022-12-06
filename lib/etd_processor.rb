@@ -1,59 +1,66 @@
-require "marc"
-require "thor"
-require "uri"
-require "faraday"
-require "nokogiri"
+# frozen_string_literal: true
+
+require 'faraday'
+require 'fileutils'
+require 'marc'
+require 'nokogiri'
+require 'thor'
+require 'uri'
 
 class EtdProcessor < Thor
-  DEFAULT_DSPACE_URI = "https://dataspace.princeton.edu"
+  DEFAULT_DSPACE_URI = 'https://dataspace.princeton.edu'
+  HTML_TABLE_CSS_SELECTOR = '#content > div:nth-child(2) > div > div.col-md-9 > div.discovery-result-results > div > table'
 
   attr_reader :file_path, :output_file_path, :dspace_uri
 
-  desc "insert_arks", "insert ARKs into a MARC file"
-  option :file_path, aliases: "-f", required: true
-  option :output_file_path, aliases: "-o", required: true
+  desc 'insert_arks', 'insert ARKs into a MARC file'
+  option :file_path, aliases: '-f', required: true
+  option :output_file_path, aliases: '-o', required: true
   option :dspace_uri, default: DEFAULT_DSPACE_URI
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
   def insert_arks(file_path, output_file_path, dspace_url)
     @file_path = file_path
     @output_file_path = output_file_path
     @dspace_uri = URI.parse(dspace_url)
 
-    marc_reader.each_with_index do |record, index|
+    marc_reader.each_with_index do |record, _index|
+      current245 = record['245']
+      raise(ArgumentError, 'Failed to find the title field 245 for record {index}') unless current245
 
-      current_245 = record["245"]
-      raise(ArgumentError, "Failed to find the title field 245 for record {index}") unless current_245
+      title = current245['a']
+      raise(ArgumentError, 'Failed to find the title subfield 245$a for record {index}') unless title
 
-      title = current_245["a"]
-      raise(ArgumentError, "Failed to find the title subfield 245$a for record {index}") unless title
-
-      arks = query_for_dspace_item(title: title)
+      arks = query_for_dspace_item(title:)
       next if arks.empty?
+
       ark = arks.first
 
       record_hash = record.to_hash
-      record_hash_fields = record_hash["fields"]
 
       new_field = {
-        "856" => {
-          "ind1" => " ",
-          "ind2" => " ",
-          "subfields" => [
+        '856' => {
+          'ind1' => ' ',
+          'ind2' => ' ',
+          'subfields' => [
             {
-              "u" => ark
+              'u' => ark
             }
           ]
         }
       }
 
-      record_hash["fields"] << new_field
+      record_hash['fields'] << new_field
 
       new_record = MARC::Record.new_from_hash(record_hash)
       marc_writer.write(new_record)
     end
   end
+  # rubocop:enable Metrics/MethodLength
+  # rubocop:enable Metrics/AbcSize
 
+  # rubocop:disable Metrics/BlockLength
   no_commands do
-
     def marc_reader
       @marc_reader ||= MARC::Reader.new(file_path)
     end
@@ -64,12 +71,14 @@ class EtdProcessor < Thor
 
     def dspace_search_uri
       @dspace_search_uri ||= begin
-                               built = dspace_uri.dup
-                               built.path = "/simple-search"
-                               built
-                             end
+        built = dspace_uri.dup
+        built.path = '/simple-search'
+        built
+      end
     end
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def query_for_dspace_item(title:)
       query_uri = dspace_search_uri.dup
       params = {
@@ -77,12 +86,15 @@ class EtdProcessor < Thor
       }
 
       response = Faraday.get(query_uri.to_s, params)
-      raise(ArgumentError, "Failed to receive a response from the DSpace URI: #{query_uri.to_s}") unless response.success?
+      unless response.success?
+        raise(ArgumentError,
+              "Failed to receive a response from the DSpace URI: #{query_uri}")
+      end
 
       response_document = Nokogiri::HTML.parse(response.body)
       # #content > div:nth-child(2) > div > div.col-md-9 > div.discovery-result-results > div > table > tbody
-      search_table = response_document.at_css("#content > div:nth-child(2) > div > div.col-md-9 > div.discovery-result-results > div > table")
-      search_table_rows = search_table.css("tr")
+      search_table = response_document.at_css(HTML_TABLE_CSS_SELECTOR)
+      search_table_rows = search_table.css('tr')
       search_result_rows = search_table_rows[1..]
 
       matches = []
@@ -106,5 +118,8 @@ class EtdProcessor < Thor
 
       matches
     end
+    # rubocop:enable Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
   end
+  # rubocop:enable Metrics/BlockLength
 end

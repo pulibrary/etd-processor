@@ -11,4 +11,5 @@ group :development, :test do
   gem 'bixby'
   gem 'pry-byebug'
   gem 'rspec'
+  gem 'simplecov'
 end

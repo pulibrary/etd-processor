@@ -2,7 +2,9 @@
 
 source "https://rubygems.org"
 
+gem "faraday"
 gem "marc"
+gem "nokogiri"
 gem "thor"
 
 group :development, :test do

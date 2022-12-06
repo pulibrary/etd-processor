@@ -1,0 +1,58 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    byebug (11.1.3)
+    coderay (1.1.3)
+    diff-lcs (1.5.0)
+    faraday (2.7.1)
+      faraday-net_http (>= 2.0, < 3.1)
+      ruby2_keywords (>= 0.0.4)
+    faraday-net_http (3.0.2)
+    marc (1.2.0)
+      rexml
+      scrub_rb (>= 1.0.1, < 2)
+      unf
+    method_source (1.0.0)
+    nokogiri (1.13.9-x86_64-darwin)
+      racc (~> 1.4)
+    pry (0.14.1)
+      coderay (~> 1.1)
+      method_source (~> 1.0)
+    pry-byebug (3.10.1)
+      byebug (~> 11.0)
+      pry (>= 0.13, < 0.15)
+    racc (1.6.0)
+    rexml (3.2.5)
+    rspec (3.12.0)
+      rspec-core (~> 3.12.0)
+      rspec-expectations (~> 3.12.0)
+      rspec-mocks (~> 3.12.0)
+    rspec-core (3.12.0)
+      rspec-support (~> 3.12.0)
+    rspec-expectations (3.12.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.12.0)
+    rspec-mocks (3.12.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.12.0)
+    rspec-support (3.12.0)
+    ruby2_keywords (0.0.5)
+    scrub_rb (1.0.1)
+    thor (1.2.1)
+    unf (0.1.4)
+      unf_ext
+    unf_ext (0.0.8.2)
+
+PLATFORMS
+  x86_64-darwin-20
+
+DEPENDENCIES
+  faraday
+  marc
+  nokogiri
+  pry-byebug
+  rspec
+  thor
+
+BUNDLED WITH
+   2.3.22

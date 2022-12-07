@@ -68,8 +68,8 @@ class EtdProcessor < Thor
       end
     end
 
-    original_marc_writer.close unless original_marc_writer.nil?
-    marc_writer.close
+    close_original_marc_writer unless original_marc_writer.nil?
+    close_marc_writer
   end
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
@@ -89,7 +89,9 @@ class EtdProcessor < Thor
 
     records.each do |record|
       title = record["245"]["a"]
-      url = record["856"]["u"]
+      url_fields = record.fields.select { |f| f.tag == "856" }
+      url_field = url_fields.last
+      url = url_field["u"]
 
       say("| #{record.leader} | #{title} | #{url} |", :green)
     end
@@ -104,7 +106,7 @@ class EtdProcessor < Thor
   # rubocop:disable Metrics/BlockLength
   no_commands do
     def marc_reader
-      @marc_reader ||= MARC::Reader.new(file_path)
+      @marc_reader = MARC::Reader.new(file_path)
     end
 
     def records
@@ -115,10 +117,20 @@ class EtdProcessor < Thor
       @marc_writer ||= MARC::Writer.new(output_file_path)
     end
 
+    def close_marc_writer
+      marc_writer.close
+      @marc_writer = nil
+    end
+
     def original_marc_writer
       return unless original_marc_file_path
 
       @original_marc_writer ||= MARC::Writer.new(original_marc_file_path)
+    end
+
+    def close_original_marc_writer
+      original_marc_writer.close
+      @original_marc_writer = nil
     end
 
     def dspace_search_uri

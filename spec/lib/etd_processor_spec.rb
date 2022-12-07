@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe EtdProcessor do
   subject(:etd_processor) { described_class.new }
   let(:file_path) { File.join('spec', 'fixtures', '28545254.mrc') }
-  let(:output_file_path) { File.join('spec', 'tmp', 'test.mrc') }
+  let(:output_file_path) { File.join('spec', 'tmp', 'output.mrc') }
   let(:dspace_uri) { 'https://dataspace.princeton.edu' }
 
   describe '#insert_arks' do
@@ -69,6 +69,12 @@ RSpec.describe EtdProcessor do
   end
 
   describe '#inspect_marc' do
+    let(:output_file_path) { File.join('spec', 'tmp', 'output_inspect.mrc') }
+
+    before do
+      etd_processor.insert_arks(file_path, output_file_path, dspace_uri)
+    end
+
     it 'prints to STDOUT a summart report for a given MARC record' do
       out = capture(:stdout) do
         etd_processor.inspect_marc(file_path)
@@ -83,6 +89,28 @@ RSpec.describe EtdProcessor do
       expect(out.chomp).to include("| file path | total number of MARC records |")
       expect(out.chomp).to include("| --------- | ---------------------------- |")
       expect(out.chomp).to include("| spec/fixtures/28545254.mrc | 1 |")
+    end
+
+    context "when inspecting a file with ARKs inserted" do
+      before do
+        etd_processor.insert_arks(file_path, output_file_path, dspace_uri)
+      end
+
+      it 'prints to STDOUT a summart report' do
+        out = capture(:stdout) do
+          etd_processor.inspect_marc(output_file_path)
+        end
+
+        expect(out.chomp).to include("# MARC Record Summary Report")
+        expect(out.chomp).to include("## Record Summary")
+        expect(out.chomp).to include("| leader | title | URL |")
+        expect(out.chomp).to include("| ------ | ----- | --- |")
+        expect(out.chomp).to include("| 03559nam a2200469   4500 | Slaves of God: Augustine and Other Romans on Religion and Politics. | http://arks.princeton.edu/ark:/88435/dsp01bc386n34x |")
+        expect(out.chomp).to include("## File Summary")
+        expect(out.chomp).to include("| file path | total number of MARC records |")
+        expect(out.chomp).to include("| --------- | ---------------------------- |")
+        expect(out.chomp).to include("| spec/tmp/output_inspect.mrc | 1 |")
+      end
     end
   end
 end

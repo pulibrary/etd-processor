@@ -67,4 +67,22 @@ RSpec.describe EtdProcessor do
       end
     end
   end
+
+  describe '#inspect_marc' do
+    it 'prints to STDOUT a summart report for a given MARC record' do
+      out = capture(:stdout) do
+        etd_processor.inspect_marc(file_path)
+      end
+
+      expect(out.chomp).to include("# MARC Record Summary Report")
+      expect(out.chomp).to include("## Record Summary")
+      expect(out.chomp).to include("| leader | title | URL |")
+      expect(out.chomp).to include("| ------ | ----- | --- |")
+      expect(out.chomp).to include("| 03491nam a2200457   4500 | Slaves of God: Augustine and Other Romans on Religion and Politics. | http://gateway.proquest.com/openurl?url_ver=Z39.88-2004&rft_val_fmt=info:ofi/fmt:kev:mtx:dissertation&res_dat=xri:pqm&rft_dat=xri:pqdiss:28545254 |")
+      expect(out.chomp).to include("## File Summary")
+      expect(out.chomp).to include("| file path | total number of MARC records |")
+      expect(out.chomp).to include("| --------- | ---------------------------- |")
+      expect(out.chomp).to include("| spec/fixtures/28545254.mrc | 1 |")
+    end
+  end
 end

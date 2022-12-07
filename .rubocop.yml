@@ -1,3 +1,7 @@
 ---
 inherit_gem:
   bixby: bixby_default.yml
+
+Layout/LineLength:
+  Exclude:
+    - 'spec/lib/etd_processor_spec.rb'

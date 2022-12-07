@@ -9,6 +9,7 @@ require 'uri'
 
 class EtdProcessor < Thor
   DEFAULT_DSPACE_URL = 'https://dataspace.princeton.edu'
+  DEFAULT_REPORT_FORMAT = 'text/plain'
   HTML_TABLE_CSS_SELECTOR = '#content > div:nth-child(2) > div > div.col-md-9 > div.discovery-result-results > div > table'
 
   attr_reader :file_path, :output_file_path, :dspace_uri, :original_marc_file_path
@@ -20,8 +21,8 @@ class EtdProcessor < Thor
   option :original_marc_file_path, aliases: '-m'
   # rubocop:disable Metrics/AbcSize
   # rubocop:disable Metrics/MethodLength
-  def insert_arks(file_path = nil, output_file_path = nil, dspace_url = DEFAULT_DSPACE_URL, original_marc_file_path = nil)
-    @file_path = file_path || options[:file_path]
+  def insert_arks(input_file_path = nil, output_file_path = nil, dspace_url = DEFAULT_DSPACE_URL, original_marc_file_path = nil)
+    @file_path = input_file_path || options[:file_path]
     @output_file_path = output_file_path || options[:output_file_path]
     @dspace_url = dspace_url || options[:dspace_url]
     @dspace_uri = URI.parse(@dspace_url)
@@ -73,10 +74,41 @@ class EtdProcessor < Thor
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
 
+  desc 'inspect_marc', 'provide a summary report for MARC records within a file'
+  option :file_path, aliases: :f, required: true
+  option :format, aliases: :F, default: DEFAULT_REPORT_FORMAT
+  def inspect_marc(input_file_path = nil, input_format = nil)
+    @file_path = input_file_path || options[:file_path]
+    # This is for any cases where this must be extended
+    @format = input_format || options[:format]
+
+    say("\n# MARC Record Summary Report", :green)
+    say("## Record Summary", :green)
+    say("| leader | title | URL |", :green)
+    say("| ------ | ----- | --- |", :green)
+
+    records.each do |record|
+      title = record["245"]["a"]
+      url = record["856"]["u"]
+
+      say("| #{record.leader} | #{title} | #{url} |", :green)
+    end
+
+    say("\n ## File Summary", :green)
+    say("| file path | total number of MARC records |", :green)
+    say("| --------- | ---------------------------- |", :green)
+
+    say("| #{file_path} | #{records.length} |", :green)
+  end
+
   # rubocop:disable Metrics/BlockLength
   no_commands do
     def marc_reader
       @marc_reader ||= MARC::Reader.new(file_path)
+    end
+
+    def records
+      @records ||= marc_reader.to_a
     end
 
     def marc_writer

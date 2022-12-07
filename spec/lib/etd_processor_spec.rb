@@ -49,21 +49,12 @@ RSpec.describe EtdProcessor do
         output_reader = MARC::Reader.new(output_file_path)
         output_records = output_reader.to_a
 
-        expect(output_records.length).to eq(166)
+        expect(output_records.length).to eq(186)
 
         original_reader = MARC::Reader.new(original_marc_file_path)
         original_records = original_reader.to_a
 
-        expect(original_records.length).to eq(20)
-
-        output_record = original_records.first
-        fields = output_record.fields.select { |f| f.tag == "856" }
-        expect(fields.length).to eq(1)
-        field = fields.first
-
-        expect(field).to be_a(MARC::DataField)
-        expect(field["u"]).to include("gateway.proquest.com")
-        expect(field["u"]).not_to include("arks.princeton.edu")
+        expect(original_records.length).to eq(0)
       end
     end
   end

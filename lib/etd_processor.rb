@@ -7,6 +7,8 @@ require 'nokogiri'
 require 'thor'
 require 'uri'
 
+require 'pry-byebug'
+
 class EtdProcessor < Thor
   DEFAULT_DSPACE_URL = 'https://dataspace.princeton.edu'
   DEFAULT_REPORT_FORMAT = 'text/plain'
@@ -145,8 +147,15 @@ class EtdProcessor < Thor
     # rubocop:disable Metrics/MethodLength
     def query_for_dspace_item(title:)
       query_uri = dspace_search_uri.dup
+
+      search_title = title.gsub('Philosophizing against Hegemons: Humanities Studies and the Politics of Reading in South Korea, Volume I.', 'Philosophizing against Hegemons: Humanities Studies and the Politics of Reading in South Korea')
+      search_title = search_title.gsub("\\uD835\\uDCA9 = ", 'N=')
+      search_title = search_title.gsub(/ =$/, '')
+      search_title = search_title.gsub(/[[:punct:]]$/, '')
+      query_title = search_title
+
       params = {
-        query: title
+        query: "\"#{query_title}\""
       }
 
       response = Faraday.get(query_uri.to_s, params)
@@ -161,6 +170,8 @@ class EtdProcessor < Thor
       matches = []
 
       return matches if search_table.nil?
+      compare_title = search_title.gsub(/[[:punct:]]/, '')
+      compare_title = compare_title.downcase
 
       search_table_rows = search_table.css('tr')
       search_result_rows = search_table_rows[1..]
@@ -174,13 +185,28 @@ class EtdProcessor < Thor
         # https://library.princeton.edu/resolve/lookup?url=http://arks.princeton.edu/ark:/88435/dsp01xp68kg239
         ark = "http://arks.princeton.edu/ark:#{ark_segments}"
 
-        query_title = title.gsub(/[[:punct:]]/, '')
-
         result_title = td_element.text
         result_title_stripped = result_title.gsub(/[[:punct:]]/, '')
-        result_title_normalized = result_title_stripped.downcase
+        result_title_downcased = result_title_stripped.downcase
+        result_title_single_space = result_title_downcased.gsub(/\s{2,}/, ' ')
 
-        matches << ark if /#{query_title}/i =~ result_title_normalized
+        result_title_ascii = result_title_single_space
+        result_title_ascii = result_title_ascii.gsub(/[áâ]/, 'a')
+        result_title_ascii = result_title_ascii.gsub(/[ç]/, 'c')
+        result_title_ascii = result_title_ascii.gsub(/[èé]/, 'e')
+        result_title_ascii = result_title_ascii.gsub(/[í]/, 'i')
+        result_title_ascii = result_title_ascii.gsub(/[õ]/, 'o')
+
+        result_title_normalized = result_title_ascii.gsub(/[[:cntrl:]]/, '')
+
+        # Encoding bugs
+        ascii_bytes = [160, 194]
+
+        u_bytes = compare_title.force_encoding('utf-8').bytes.sort.uniq
+        v_bytes = result_title_normalized.force_encoding('utf-8').bytes.sort.uniq
+        v_bytes = v_bytes.reject { |v| ascii_bytes.include?(v) }
+
+        matches << ark if u_bytes == v_bytes
       end
 
       matches

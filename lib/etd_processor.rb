@@ -8,7 +8,7 @@ require 'thor'
 require 'uri'
 
 class EtdProcessor < Thor
-  DEFAULT_DSPACE_URI = 'https://dataspace.princeton.edu'
+  DEFAULT_DSPACE_URL = 'https://dataspace.princeton.edu'
   HTML_TABLE_CSS_SELECTOR = '#content > div:nth-child(2) > div > div.col-md-9 > div.discovery-result-results > div > table'
 
   attr_reader :file_path, :output_file_path, :dspace_uri, :original_marc_file_path
@@ -16,11 +16,11 @@ class EtdProcessor < Thor
   desc 'insert_arks', 'insert ARKs into a MARC file'
   option :file_path, aliases: '-f', required: true
   option :output_file_path, aliases: '-o', required: true
-  option :dspace_uri, default: DEFAULT_DSPACE_URI
+  option :dspace_url, aliases: '-d', default: DEFAULT_DSPACE_URL
   option :original_marc_file_path, aliases: '-m'
   # rubocop:disable Metrics/AbcSize
   # rubocop:disable Metrics/MethodLength
-  def insert_arks(file_path, output_file_path, dspace_url, original_marc_file_path = nil)
+  def insert_arks(file_path, output_file_path, dspace_url = DEFAULT_DSPACE_URL, original_marc_file_path = nil)
     @file_path = file_path
     @output_file_path = output_file_path
     @dspace_uri = URI.parse(dspace_url)

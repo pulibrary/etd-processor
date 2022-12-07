@@ -14,17 +14,18 @@ class EtdProcessor < Thor
   attr_reader :file_path, :output_file_path, :dspace_uri, :original_marc_file_path
 
   desc 'insert_arks', 'insert ARKs into a MARC file'
-  option :file_path, aliases: '-f', required: true
-  option :output_file_path, aliases: '-o', required: true
+  option :file_path, aliases: :f, required: true
+  option :output_file_path, aliases: :o, required: true
   option :dspace_url, aliases: '-d', default: DEFAULT_DSPACE_URL
   option :original_marc_file_path, aliases: '-m'
   # rubocop:disable Metrics/AbcSize
   # rubocop:disable Metrics/MethodLength
-  def insert_arks(file_path, output_file_path, dspace_url = DEFAULT_DSPACE_URL, original_marc_file_path = nil)
-    @file_path = file_path
-    @output_file_path = output_file_path
-    @dspace_uri = URI.parse(dspace_url)
-    @original_marc_file_path = original_marc_file_path
+  def insert_arks(file_path = nil, output_file_path = nil, dspace_url = DEFAULT_DSPACE_URL, original_marc_file_path = nil)
+    @file_path = file_path || options[:file_path]
+    @output_file_path = output_file_path || options[:output_file_path]
+    @dspace_url = dspace_url || options[:dspace_url]
+    @dspace_uri = URI.parse(@dspace_url)
+    @original_marc_file_path = original_marc_file_path || options[:original_marc_file_path]
 
     marc_reader.each_with_index do |record, _index|
       current245 = record['245']

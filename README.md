@@ -8,6 +8,8 @@ $ bundle install
 
 ## Usage
 
+### Matching ARKs to MARC Records
+
 First, please download the MARC record export into the directory `downloads/`.
 
 Then, in order to generate the MARC records with the updated ARKs, please invoke the following:
@@ -36,5 +38,14 @@ $ export MARC_PATH="downloads/export.mrc"
 $ export OUTPUT_MARC_PATH="output/updated.mrc"
 $ export DSPACE_URL="http://my.dspace.org/"
 $ bundle exec thor etd_processor:insert_arks -f $MARC_PATH -o $OUTPUT_MARC_PATH -d $DSPACE_URL
+```
+
+### Generating MARC Record Summary Reports
+
+Please invoke the following:
+
+```bash
+$ export MARC_PATH="output/updated.mrc"
+$ bundle exec thor etd_processor:inspect_marc -f $MARC_PATH
 ```
 

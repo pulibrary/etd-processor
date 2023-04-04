@@ -108,7 +108,16 @@ class EtdProcessor < Thor
   # rubocop:disable Metrics/BlockLength
   no_commands do
     def marc_reader
-      @marc_reader = MARC::Reader.new(file_path)
+      file_extension = File.extname(file_path)
+      case file_extension 
+      when '.xml'
+        @marc_reader = MARC::XMLReader.new(file_path)
+      when '.mrc'
+        @marc_reader = MARC::Reader.new(file_path)
+      else 
+        raise(StandardError, 'Could not create marc reader: only XML and MRC files are supported for read')
+      end
+
     end
 
     def records
@@ -116,7 +125,15 @@ class EtdProcessor < Thor
     end
 
     def marc_writer
-      @marc_writer ||= MARC::Writer.new(output_file_path)
+      file_extension = File.extname(file_path)
+      case file_extension 
+      when '.xml'
+        @marc_writer ||= MARC::UnsafeXMLWriter.new(output_file_path)
+      when '.mrc'
+        @marc_writer ||= MARC::Writer.new(output_file_path)
+      else 
+        raise(StandardError, 'Could not create marc writer: only XML and MRC files are supported for writing')
+      end
     end
 
     def close_marc_writer

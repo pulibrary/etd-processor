@@ -115,7 +115,7 @@ class EtdProcessor < Thor
       when '.mrc'
         @marc_reader = MARC::Reader.new(file_path)
       else 
-        raise(StandardError, 'Could not create marc reader: only XML and MRC files are supported for read')
+        raise(ArgumentError, 'Could not create marc reader, only XML and MRC files are supported for read')
       end
 
     end
@@ -125,14 +125,14 @@ class EtdProcessor < Thor
     end
 
     def marc_writer
-      file_extension = File.extname(file_path)
+      file_extension = File.extname(output_file_path)
       case file_extension 
       when '.xml'
         @marc_writer ||= MARC::UnsafeXMLWriter.new(output_file_path)
       when '.mrc'
         @marc_writer ||= MARC::Writer.new(output_file_path)
       else 
-        raise(StandardError, 'Could not create marc writer: only XML and MRC files are supported for writing')
+        raise(ArgumentError, 'Could not create marc writer, only XML and MRC files are supported for writing')
       end
     end
 

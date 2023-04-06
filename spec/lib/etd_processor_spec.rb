@@ -6,6 +6,8 @@ RSpec.describe EtdProcessor do
   subject(:etd_processor) { described_class.new }
   let(:file_path) { File.join('spec', 'fixtures', '28545254.mrc') }
   let(:output_file_path) { File.join('spec', 'tmp', 'output.mrc') }
+  let(:file_path_invalid) { File.join('spec', 'fixtures', '28545254_invalid.mrk') }
+  let(:output_file_path_invalid) { File.join('spec', 'tmp', 'output_invalid.json') }
   let(:dspace_uri) { 'https://dataspace.princeton.edu' }
 
   describe '#insert_arks' do
@@ -59,20 +61,14 @@ RSpec.describe EtdProcessor do
     end
 
     context "when trying to read from a non-standard file format" do
-      let(:file_path) { File.join('spec', 'fixtures', '28545254_wrong.mrk') }
-      let(:output_file_path) { File.join('spec', 'tmp', 'output.mrc') }
-
       it 'raises an error' do
-        expect { etd_processor.insert_arks(file_path, output_file_path, dspace_uri) }.to raise(StandardError, 'Could not create marc reader: only XML and MRC files are supported for read')
+        expect { etd_processor.insert_arks(file_path_invalid, output_file_path, dspace_uri) }.to raise_error(ArgumentError, 'Could not create marc reader, only XML and MRC files are supported for read')
       end
     end
 
     context "when trying to write to a non-standard file format" do
-      let(:file_path) { File.join('spec', 'fixtures', '28545254.mrc') }
-      let(:output_file_path) { File.join('spec', 'tmp', 'output_wrong.mrk') }
-
       it 'raises an error' do
-        expect { etd_processor.insert_arks(file_path, output_file_path, dspace_uri) }.to raise(StandardError, 'Could not create marc writer: only XML and MRC files are supported for writing')
+        expect { etd_processor.insert_arks(file_path, output_file_path_invalid, dspace_uri) }.to raise_error(ArgumentError, 'Could not create marc writer, only XML and MRC files are supported for writing')
       end
     end
   end
